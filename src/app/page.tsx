@@ -1,6 +1,6 @@
 "use client";
 import React, { useReducer, useRef, useEffect, useState } from "react";
-import { Download, Undo, Redo, Trash2 } from "lucide-react";
+import { AiOutlineDownload, AiOutlineUndo, AiOutlineRedo, AiOutlineDelete } from "react-icons/ai"
 import { reducerFn } from "@/utils/reducerFn";
 import { Shape } from "@/types";
 import { useDrop } from "react-dnd";
@@ -227,14 +227,14 @@ const DesignEditor = () => {
               className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-md border border-gray-200 hover:bg-gray-200 transition-colors"
               onClick={() => dispatch({ type: "UNDO" })}
             >
-              <Undo className="w-4 h-4 mr-2" />
+              <AiOutlineUndo className="w-4 h-4 mr-2" />
               Undo
             </button>
             <button
               className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-md border border-gray-200 hover:bg-gray-200 transition-colors"
               onClick={() => dispatch({ type: "REDO" })}
             >
-              <Redo className="w-4 h-4 mr-2" />
+              <AiOutlineRedo className="w-4 h-4 mr-2" />
               Redo
             </button>
             <button
@@ -246,7 +246,7 @@ const DesignEditor = () => {
               onClick={handleDeleteShape}
               disabled={!state.selectedId}
             >
-              <Trash2 className="w-4 h-4 mr-2" />
+              <AiOutlineDelete className="w-4 h-4 mr-2" />
               Delete
             </button>
           </div>
@@ -258,7 +258,7 @@ const DesignEditor = () => {
             className="w-full flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
             onClick={() => downloadAsPNG({ canvasRef, state })}
           >
-            <Download className="w-4 h-4 mr-2" />
+            <AiOutlineDownload className="w-4 h-4 mr-2" />
             Export Design
           </button>
         </div>

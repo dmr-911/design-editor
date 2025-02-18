@@ -1,5 +1,7 @@
 import { Circle, Square } from "lucide-react";
 import { useDrag } from "react-dnd";
+import { FaRegCircle } from "react-icons/fa";
+import { RiRectangleLine } from "react-icons/ri";
 
 // Define drag item types
 export const ItemTypes = {
@@ -34,13 +36,13 @@ const DraggableShape = ({
       style={{ width: "96px", height: "96px" }}
     >
       {type === "rectangle" ? (
-        <Square
+        <RiRectangleLine
           className="w-24 h-24 block mr-2 cursor-move"
           onClick={() => handleAddShape("rectangle")}
         />
       ) : (
-        <Circle
-          className="w-24 h-24 block mr-2"
+        <FaRegCircle
+          className="w-20 h-24 block mr-2"
           onClick={() => handleAddShape("circle")}
         />
       )}
