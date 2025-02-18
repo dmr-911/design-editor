@@ -3,9 +3,10 @@ import React, { useReducer, useRef, useEffect } from "react";
 import { Download, Square, Circle, Undo, Redo } from "lucide-react";
 import { reducerFn } from "@/utils/reducerFn";
 import { Shape } from "@/types";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import { DndProvider } from "react-dnd";
+import { useDrop } from "react-dnd";
 import ResizeHandle from "@/components/ResizeHandle";
+import { downloadAsPNG } from "@/utils/downloadAsPNG";
+import DraggableShape, { ItemTypes } from "@/components/DraggableShape";
 
 const DesignEditor = () => {
   const [state, dispatch] = useReducer(reducerFn, {
@@ -146,18 +147,29 @@ const DesignEditor = () => {
     initialShapeRef.current = null;
   };
 
+  // drop area
+  // Canvas drop area
+  const [, drop] = useDrop(() => ({
+    accept: ItemTypes.SHAPE,
+    drop: (item: { type: "rectangle" | "circle" }, monitor) => {
+      if (!canvasRef.current) return;
+
+      const rect = canvasRef.current.getBoundingClientRect();
+      const clientOffset = monitor.getClientOffset();
+
+      if (clientOffset) {
+        const x = clientOffset.x - rect.left - 50; // Center the shape
+        const y = clientOffset.y - rect.top - 50; // Center the shape
+        handleAddShape(item.type, x, y);
+      }
+    },
+  }));
+
   return (
     <div className="w-full max-w-4xl mx-auto p-4 grid grid-cols-8 gap-2">
-      <DndProvider backend={HTML5Backend}></DndProvider>
       <div className="mb-4 flex flex-col gap-4 col-span-2">
-        <Square
-          className="w-24 h-24 block mr-2 cursor-move"
-          onClick={() => handleAddShape("rectangle")}
-        />
-        <Circle
-          className="w-24 h-24 block mr-2"
-          onClick={() => handleAddShape("circle")}
-        />
+        <DraggableShape type="rectangle" handleAddShape={handleAddShape} />
+        <DraggableShape type="circle" handleAddShape={handleAddShape} />
         <button
           className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
           onClick={() => dispatch({ type: "UNDO" })}
@@ -172,14 +184,21 @@ const DesignEditor = () => {
           <Redo className="w-4 h-4 inline mr-2" />
           Redo
         </button>
-        <button className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+        <button
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          onClick={() => downloadAsPNG({ canvasRef, state })}
+        >
           <Download className="w-4 h-4 inline mr-2" />
           Download
         </button>
       </div>
 
       <div
-        ref={canvasRef}
+        // ref={canvasRef}
+        ref={(node) => {
+          canvasRef.current = node as HTMLDivElement;
+          drop(node);
+        }}
         className="col-span-6 h-[600px] border-2 border-gray-300 rounded relative bg-white backdrop-blur-lg bg-opacity-50"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
