@@ -45,6 +45,17 @@ export const reducerFn = (state: State, action: Action): State => {
         };
       }
       return state;
+      case "DELETE_SHAPE": {
+        const newShapes = state.shapes.filter(shape => shape.id !== action.payload);
+        const newHistory = state.history.slice(0, state.historyIndex + 1);
+        return {
+          ...state,
+          shapes: newShapes,
+          selectedId: null, // Clear selection after deletion
+          history: [...newHistory, newShapes],
+          historyIndex: state.historyIndex + 1,
+        };
+      }
     case "LOAD_DESIGN":
       return {
         ...state,

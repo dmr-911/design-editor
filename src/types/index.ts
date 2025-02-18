@@ -21,4 +21,5 @@ export type Action =
   | { type: "SELECT_SHAPE"; payload: string | null }
   | { type: "UNDO" }
   | { type: "REDO" }
+  | {type : "DELETE_SHAPE"; payload : string}
   | { type: "LOAD_DESIGN"; payload: Shape[] };
