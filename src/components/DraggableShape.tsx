@@ -13,7 +13,11 @@ const DraggableShape = ({
   handleAddShape,
 }: {
   type: "rectangle" | "circle";
-  handleAddShape: (type: "rectangle" | "circle") => void;
+  handleAddShape: (
+    type: "rectangle" | "circle",
+    x?: number,
+    y?: number
+  ) => void;
 }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.SHAPE,
