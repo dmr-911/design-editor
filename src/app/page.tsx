@@ -1,101 +1,208 @@
-import Image from "next/image";
+"use client"
+import React, { useReducer, useRef, useEffect } from 'react';
+import { Download, Square, Circle, Undo, Redo } from 'lucide-react';
 
-export default function Home() {
+// Types
+type Shape = {
+  id: string;
+  type: 'rectangle' | 'circle';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+type State = {
+  shapes: Shape[];
+  selectedId: string | null;
+  history: Shape[][];
+  historyIndex: number;
+};
+
+type Action =
+  | { type: 'ADD_SHAPE'; payload: Shape }
+  | { type: 'UPDATE_SHAPE'; payload: Shape }
+  | { type: 'SELECT_SHAPE'; payload: string | null }
+  | { type: 'UNDO' }
+  | { type: 'REDO' }
+  | { type: 'LOAD_DESIGN'; payload: Shape[] };
+
+// Reducer
+const reducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case 'ADD_SHAPE': {
+      const newShapes = [...state.shapes, action.payload];
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      return {
+        ...state,
+        shapes: newShapes,
+        history: [...newHistory, newShapes],
+        historyIndex: state.historyIndex + 1,
+      };
+    }
+    case 'UPDATE_SHAPE': {
+      const newShapes = state.shapes.map(shape =>
+        shape.id === action.payload.id ? action.payload : shape
+      );
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      return {
+        ...state,
+        shapes: newShapes,
+        history: [...newHistory, newShapes],
+        historyIndex: state.historyIndex + 1,
+      };
+    }
+    case 'SELECT_SHAPE':
+      return { ...state, selectedId: action.payload };
+    case 'UNDO':
+      if (state.historyIndex > 0) {
+        return {
+          ...state,
+          shapes: state.history[state.historyIndex - 1],
+          historyIndex: state.historyIndex - 1,
+        };
+      }
+      return state;
+    case 'REDO':
+      if (state.historyIndex < state.history.length - 1) {
+        return {
+          ...state,
+          shapes: state.history[state.historyIndex + 1],
+          historyIndex: state.historyIndex + 1,
+        };
+      }
+      return state;
+    case 'LOAD_DESIGN':
+      return {
+        ...state,
+        shapes: action.payload,
+        history: [action.payload],
+        historyIndex: 0,
+      };
+    default:
+      return state;
+  }
+};
+
+
+const DesignEditor = () => {
+  const [state, dispatch] = useReducer(reducer, {
+    shapes: [],
+    selectedId: null,
+    history: [[]],
+    historyIndex: 0,
+  });
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startPos = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const savedDesign = localStorage.getItem('design');
+    if (savedDesign) {
+      dispatch({ type: 'LOAD_DESIGN', payload: JSON.parse(savedDesign) });
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('design', JSON.stringify(state.shapes));
+  }, [state.shapes]);
+
+  const handleAddShape = (type: 'rectangle' | 'circle') => {
+    const newShape: Shape = {
+      id: Math.random().toString(36).substr(2, 9),
+      type,
+      x: 50,
+      y: 50,
+      width: 100,
+      height: 100,
+    };
+    dispatch({ type: 'ADD_SHAPE', payload: newShape });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent, id: string) => {
+    if (canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      startPos.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+      isDragging.current = true;
+      dispatch({ type: 'SELECT_SHAPE', payload: id });
+    }
+  };
+
+
+
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="w-full max-w-4xl mx-auto p-4">
+      <div className="mb-4 flex gap-4">
+        <button
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          onClick={() => handleAddShape('rectangle')}
+        >
+          <Square className="w-4 h-4 inline mr-2" />
+          Add Rectangle
+        </button>
+        <button
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          onClick={() => handleAddShape('circle')}
+        >
+          <Circle className="w-4 h-4 inline mr-2" />
+          Add Circle
+        </button>
+        <button
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          onClick={() => dispatch({ type: 'UNDO' })}
+        >
+          <Undo className="w-4 h-4 inline mr-2" />
+          Undo
+        </button>
+        <button
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          onClick={() => dispatch({ type: 'REDO' })}
+        >
+          <Redo className="w-4 h-4 inline mr-2" />
+          Redo
+        </button>
+        <button
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        >
+          <Download className="w-4 h-4 inline mr-2" />
+          Download
+        </button>
+      </div>
+      
+      <div
+        ref={canvasRef}
+        className="w-full h-[600px] border-2 border-gray-300 rounded relative bg-white backdrop-blur-lg bg-opacity-50"
+      >
+        {state.shapes.map(shape => (
+          <div
+            key={shape.id}
+            className={`absolute cursor-move ${
+              state.selectedId === shape.id ? 'ring-2 ring-indigo-500' : ''
+            }`}
+            style={{
+              left: shape.x,
+              top: shape.y,
+              width: shape.width,
+              height: shape.height,
+            }}
+            onMouseDown={(e) => handleMouseDown(e, shape.id)}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            {shape.type === 'rectangle' ? (
+              <div className="w-full h-full bg-indigo-600" />
+            ) : (
+              <div className="w-full h-full rounded-full bg-indigo-600" />
+            )}
+            
+          </div>
+        ))}
+      </div>
     </div>
   );
-}
+};
+
+export default DesignEditor;
